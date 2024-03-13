@@ -43,3 +43,8 @@ secrets.yml
 
 
 application.properties
+
+.theia
+HELP.md
+mvnw
+mvnw.cmd
