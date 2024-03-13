@@ -33,8 +33,6 @@ public class User {
 	@DBRef
 	private Set<Role> roles = new HashSet<>();
 
-	public User() {
-	}
 
 	public User(@NotBlank @Size(max = 50) String username, @NotBlank @Size(max = 50) @Email String email,
 			@NotBlank @Size(max = 120) String password) {

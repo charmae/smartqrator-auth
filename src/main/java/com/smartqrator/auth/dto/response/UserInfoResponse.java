@@ -6,17 +6,17 @@ public class UserInfoResponse {
 
 	private String id;
 	private String token;
-	private String type;
 	private String username;
 	private String email;
 	private List<String> roles;
 
-	public UserInfoResponse(String id, String username, String email, List<String> roles) {
+	public UserInfoResponse(String id, String username, String email, List<String> roles, String token) {
 		super();
 		this.id = id;
 		this.username = username;
 		this.email = email;
 		this.roles = roles;
+		this.token = token;
 	}
 
 	public String getToken() {
@@ -25,14 +25,6 @@ public class UserInfoResponse {
 
 	public void setToken(String token) {
 		this.token = token;
-	}
-
-	public String getType() {
-		return type;
-	}
-
-	public void setType(String type) {
-		this.type = type;
 	}
 
 	public String getId() {

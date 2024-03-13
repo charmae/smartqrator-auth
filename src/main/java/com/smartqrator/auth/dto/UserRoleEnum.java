@@ -1,4 +1,4 @@
-package com.smartqrator.auth.dto.model;
+package com.smartqrator.auth.dto;
 
 public enum UserRoleEnum {
 	ROLE_USER, 

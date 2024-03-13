@@ -30,12 +30,10 @@ public class WebSecurityConfig {
 	UserDetailsServiceImpl userDetailsService;
 
 	@Autowired
-	private AuthenticationEntryPointImpl unauthorizedHandler;
+	AuthenticationEntryPointImpl unauthorizedHandler;
 
-	@Bean
-	AuthTokenFilter authenticationJwtTokenFilter() {
-		return new AuthTokenFilter();
-	}
+	@Autowired
+	AuthTokenFilter authTokenFilter;
 
 	@Bean
 	DaoAuthenticationProvider authenticationProvider() {
@@ -47,7 +45,7 @@ public class WebSecurityConfig {
 	}
 
 	@Bean
-	PasswordEncoder passwordEncoder() {
+	public PasswordEncoder passwordEncoder() {
 		return new BCryptPasswordEncoder();
 	}
 
@@ -61,12 +59,14 @@ public class WebSecurityConfig {
 		http.csrf(csrf -> csrf.disable())
 				.exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-				.authorizeHttpRequests(auth -> auth.requestMatchers("/api/auth/**").permitAll()
-						.requestMatchers("/api/test/**").permitAll().anyRequest().authenticated());
+				.authorizeHttpRequests(auth -> 
+						auth.requestMatchers("/api/auth/**").permitAll()
+						.requestMatchers("/api/test/**").permitAll()
+						.anyRequest().authenticated());
 
 		http.authenticationProvider(authenticationProvider());
 
-		http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
+		http.addFilterBefore(authTokenFilter, UsernamePasswordAuthenticationFilter.class);
 
 		return http.build();
 	}

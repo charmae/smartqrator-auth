@@ -1,7 +1,10 @@
 package com.smartqrator.auth.jwt;
 
-import java.security.Key;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.crypto.SecretKey;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,12 +13,11 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.WebUtils;
 
-import com.smartqrator.auth.service.UserDetailsImpl;
+import com.smartqrator.auth.dto.UserDetailsDTO;
 
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -45,7 +47,7 @@ public class JwtUtil {
 		}
 	}
 
-	public ResponseCookie generateJwtCookie(UserDetailsImpl userPrincipal) {
+	public ResponseCookie generateJwtCookie(UserDetailsDTO userPrincipal) {
 		String jwt = generateTokenFromUsername(userPrincipal.getUsername());
 		ResponseCookie cookie = ResponseCookie.from(jwtCookie, jwt).path("/api").maxAge(24 * 60 * 60).httpOnly(true)
 				.build();
@@ -53,7 +55,7 @@ public class JwtUtil {
 	}
 
 	public String getUserNameFromJwtToken(String token) {
-		return Jwts.parserBuilder().setSigningKey(key()).build().parseClaimsJws(token).getBody().getSubject();
+		return Jwts.parser().verifyWith(key()).build().parseSignedClaims(token).getPayload().getSubject();
 	}
 
 	public ResponseCookie getCleanJwtCookie() {
@@ -61,13 +63,13 @@ public class JwtUtil {
 		return cookie;
 	}
 
-	private Key key() {
+	private SecretKey key() {
 		return Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtSecret));
 	}
 
 	public boolean validateJwtToken(String authToken) {
 		try {
-			Jwts.parserBuilder().setSigningKey(key()).build().parse(authToken);
+			Jwts.parser().verifyWith(key()).build().parseSignedClaims(authToken);
 			return true;
 		} catch (MalformedJwtException e) {
 			logger.error("Invalid JWT token: {}", e.getMessage());
@@ -83,8 +85,11 @@ public class JwtUtil {
 	}
 
 	public String generateTokenFromUsername(String username) {
-		return Jwts.builder().setSubject(username).setIssuedAt(new Date())
-				.setExpiration(new Date((new Date()).getTime() + jwtExpirationMs))
-				.signWith(key(), SignatureAlgorithm.HS256).compact();
+
+		Map<String, Object> payload = new HashMap<>();
+		payload.put("sub", username);
+		payload.put("iat", new Date());
+		payload.put("exp", new Date((new Date()).getTime() + jwtExpirationMs));
+		return Jwts.builder().claims(payload).signWith(key(), Jwts.SIG.HS256).compact();
 	}
 }

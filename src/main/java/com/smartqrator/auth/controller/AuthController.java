@@ -20,9 +20,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.smartqrator.auth.dto.UserDetailsDTO;
+import com.smartqrator.auth.dto.UserRoleEnum;
 import com.smartqrator.auth.dto.model.Role;
 import com.smartqrator.auth.dto.model.User;
-import com.smartqrator.auth.dto.model.UserRoleEnum;
 import com.smartqrator.auth.dto.request.LoginRequest;
 import com.smartqrator.auth.dto.request.SignupRequest;
 import com.smartqrator.auth.dto.response.MessageResponse;
@@ -30,7 +31,6 @@ import com.smartqrator.auth.dto.response.UserInfoResponse;
 import com.smartqrator.auth.jwt.JwtUtil;
 import com.smartqrator.auth.repository.RoleRepository;
 import com.smartqrator.auth.repository.UserRepository;
-import com.smartqrator.auth.service.UserDetailsImpl;
 
 import jakarta.validation.Valid;
 
@@ -65,57 +65,51 @@ public class AuthController {
 	@PostMapping("/signup")
 	public ResponseEntity<MessageResponse> registerUser(@Valid @RequestBody SignupRequest signUpRequest) {
 		if (userRepository.existsByUsername(signUpRequest.getUsername())) {
-		      return ResponseEntity
-		          .badRequest()
-		          .body(new MessageResponse("Error: Username is already taken!"));
-		    }
+			return ResponseEntity.badRequest().body(new MessageResponse("Error: Username is already taken!"));
+		}
 
-		    if (userRepository.existsByEmail(signUpRequest.getEmail())) {
-		      return ResponseEntity
-		          .badRequest()
-		          .body(new MessageResponse("Error: Email is already in use!"));
-		    }
+		if (userRepository.existsByEmail(signUpRequest.getEmail())) {
+			return ResponseEntity.badRequest().body(new MessageResponse("Error: Email is already in use!"));
+		}
 
-		    User user = new User(signUpRequest.getUsername(), 
-		                         signUpRequest.getEmail(),
-		                         encoder.encode(signUpRequest.getPassword()));
+		User user = new User(signUpRequest.getUsername(), signUpRequest.getEmail(),
+				encoder.encode(signUpRequest.getPassword()));
 
-		    Set<String> strRoles = signUpRequest.getRoles();
-		    Set<Role> roles = new HashSet<>();
+		Set<String> strRoles = signUpRequest.getRoles();
+		Set<Role> roles = new HashSet<>();
 
-		    if (strRoles == null) {
-		      Role userRole = roleRepository.findByType(UserRoleEnum.ROLE_USER)
-		          .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-		      roles.add(userRole);
-		    } else {
-		      strRoles.forEach(role -> {
-		        switch (role) {
-		        case "admin":
-		          Role adminRole = roleRepository.findByType(UserRoleEnum.ROLE_ADMIN)
-		              .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-		          roles.add(adminRole);
+		if (strRoles == null) {
+			Role userRole = roleRepository.findByType(UserRoleEnum.ROLE_USER)
+					.orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+			roles.add(userRole);
+		} else {
+			strRoles.forEach(role -> {
+				switch (role) {
+				case "admin":
+					Role adminRole = roleRepository.findByType(UserRoleEnum.ROLE_ADMIN)
+							.orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+					roles.add(adminRole);
 
-		          break;
-		        case "mod":
-		          Role modRole = roleRepository.findByType(UserRoleEnum.ROLE_MODERATOR)
-		              .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-		          roles.add(modRole);
+					break;
+				case "mod":
+					Role modRole = roleRepository.findByType(UserRoleEnum.ROLE_MODERATOR)
+							.orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+					roles.add(modRole);
 
-		          break;
-		        default:
-		          Role userRole = roleRepository.findByType(UserRoleEnum.ROLE_USER)
-		              .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-		          roles.add(userRole);
-		        }
-		      });
-		    }
+					break;
+				default:
+					Role userRole = roleRepository.findByType(UserRoleEnum.ROLE_USER)
+							.orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+					roles.add(userRole);
+				}
+			});
+		}
 
-		    user.setRoles(roles);
-		    userRepository.save(user);
+		user.setRoles(roles);
+		userRepository.save(user);
 
-		    return ResponseEntity.ok(
-		    		new MessageResponse("User registered successfully!"));
-		  }
+		return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
+	}
 
 	/**
 	 * Sign In/ Login
@@ -128,12 +122,13 @@ public class AuthController {
 	 */
 	@PostMapping("/signin")
 	public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
+
 		Authentication authentication = authenticationManager.authenticate(
 				new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
 
 		SecurityContextHolder.getContext().setAuthentication(authentication);
 
-		UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+		UserDetailsDTO userDetails = (UserDetailsDTO) authentication.getPrincipal();
 
 		ResponseCookie jwtCookie = jwtUtil.generateJwtCookie(userDetails);
 
@@ -141,23 +136,19 @@ public class AuthController {
 				.collect(Collectors.toList());
 
 		return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, jwtCookie.toString())
-				.body(new UserInfoResponse(userDetails.getId(), 
-						userDetails.getUsername(), 
-						userDetails.getEmail(), roles));
+				.body(new UserInfoResponse(userDetails.getId(), userDetails.getUsername(), userDetails.getEmail(),
+						roles, jwtUtil.generateTokenFromUsername(userDetails.getUsername())));
 
 	}
 
 	/**
-	 * Sign Out/ Logout Clears cookies
-	 * TODO
+	 * Sign Out/ Logout Clears cookies TODO
+	 * 
 	 * @return
 	 */
 	@PostMapping("/signout")
 	public ResponseEntity<?> logoutUser() {
-		return ResponseEntity
-		        .ok()
-		        .header(HttpHeaders.SET_COOKIE, jwtUtil.getCleanJwtCookie().toString())
-		        .build();
+		return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, jwtUtil.getCleanJwtCookie().toString()).build();
 
 	}
 

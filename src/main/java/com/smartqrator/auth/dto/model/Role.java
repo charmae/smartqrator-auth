@@ -3,6 +3,8 @@ package com.smartqrator.auth.dto.model;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import com.smartqrator.auth.dto.UserRoleEnum;
+
 @Document(collection = "roles")
 public class Role {
 

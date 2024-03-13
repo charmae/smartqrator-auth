@@ -7,6 +7,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.smartqrator.auth.dto.UserDetailsDTO;
 import com.smartqrator.auth.dto.model.User;
 import com.smartqrator.auth.repository.UserRepository;
 
@@ -16,16 +17,13 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 	@Autowired
 	UserRepository userRepository;
 
-	public UserDetailsServiceImpl() {
-	}
-
 	@Override
 	@Transactional
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 		User user = userRepository.findByUsername(username)
 				.orElseThrow(() -> new UsernameNotFoundException("User Not Found with username: " + username));
 
-		return UserDetailsImpl.build(user);
+		return UserDetailsDTO.build(user);
 	}
 
 }
